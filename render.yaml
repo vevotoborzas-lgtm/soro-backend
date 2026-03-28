@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: soro-hu-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /v1/ping
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite+aiosqlite:///./soro.db
