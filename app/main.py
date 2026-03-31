@@ -1,72 +1,77 @@
 import logging
 import os
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s"
-)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ── Config betöltés ───────────────────────────────────────────────────────────
-try:
-    from app.core.config import settings
-    logger.info(f"Config betöltve. ENV={settings.ENVIRONMENT}")
-except Exception as e:
-    logger.error(f"Config hiba: {e}")
-    raise
+logger.info("main.py betöltés kezdete...")
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
+logger.info("FastAPI importálva")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Soro.hu backend indul...")
+    logger.info("App indul...")
     try:
         from app.core.database import init_db
         await init_db()
-        logger.info("Adatbázis kész.")
+        logger.info("DB kész")
     except Exception as e:
-        logger.error(f"DB hiba (folytatás): {e}")
+        logger.error(f"DB hiba: {e}")
     yield
-    logger.info("Backend leáll.")
 
-
-app = FastAPI(
-    title="Soro.hu API",
-    version="1.0.0",
-    docs_url="/docs" if settings.ENVIRONMENT != "production" else None,
-    redoc_url=None,
-    lifespan=lifespan,
-)
+app = FastAPI(title="Soro.hu API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ── Routerek ──────────────────────────────────────────────────────────────────
+logger.info("Routerek betöltése...")
+
 try:
-    from app.api.v1 import auth, articles, keywords, webhooks, account
-    app.include_router(auth.router,     prefix="/v1/auth",     tags=["Auth"])
-    app.include_router(articles.router, prefix="/v1/articles", tags=["Articles"])
-    app.include_router(keywords.router, prefix="/v1/keywords", tags=["Keywords"])
-    app.include_router(webhooks.router, prefix="/v1/webhooks", tags=["Webhooks"])
-    app.include_router(account.router,  prefix="/v1/account",  tags=["Account"])
-    logger.info("Összes router betöltve.")
+    from app.api.v1 import auth
+    app.include_router(auth.router, prefix="/v1/auth", tags=["Auth"])
+    logger.info("auth router OK")
 except Exception as e:
-    logger.error(f"Router betöltési hiba: {e}")
-    raise
+    logger.error(f"auth router hiba: {e}")
 
+try:
+    from app.api.v1 import articles
+    app.include_router(articles.router, prefix="/v1/articles", tags=["Articles"])
+    logger.info("articles router OK")
+except Exception as e:
+    logger.error(f"articles router hiba: {e}")
 
-# ── Health – ezeket mindig válaszolja, DB nélkül is ──────────────────────────
+try:
+    from app.api.v1 import keywords
+    app.include_router(keywords.router, prefix="/v1/keywords", tags=["Keywords"])
+    logger.info("keywords router OK")
+except Exception as e:
+    logger.error(f"keywords router hiba: {e}")
+
+try:
+    from app.api.v1 import webhooks
+    app.include_router(webhooks.router, prefix="/v1/webhooks", tags=["Webhooks"])
+    logger.info("webhooks router OK")
+except Exception as e:
+    logger.error(f"webhooks router hiba: {e}")
+
+try:
+    from app.api.v1 import account
+    app.include_router(account.router, prefix="/v1/account", tags=["Account"])
+    logger.info("account router OK")
+except Exception as e:
+    logger.error(f"account router hiba: {e}")
+
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "1.0.0"}
+    return {"status": "ok"}
 
 @app.get("/")
 async def root():
@@ -74,4 +79,6 @@ async def root():
 
 @app.get("/v1/ping")
 async def ping():
-    return {"message": "Soro.hu API működik", "version": "1.0.0"}
+    return {"message": "ok"}
+
+logger.info("App felépítve, indul a szerver...")
