@@ -15,4 +15,4 @@ RUN chmod +x startup.sh
 
 EXPOSE 8000
 
-CMD ["/bin/bash", "startup.sh"]
+CMD ["python", "run.py"]
