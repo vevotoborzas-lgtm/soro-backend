@@ -1,0 +1,12 @@
+.env
+.env.local
+*.db
+__pycache__/
+*.py[cod]
+.Python
+.venv/
+venv/
+.pytest_cache/
+local-wordpress-api-settings.txt
+uvicorn*.log
+uvicorn.pid
