@@ -36,9 +36,8 @@ _configure_logging()
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     async with engine.begin() as conn:
-        # SQLite dev: auto-create tables. PostgreSQL: run `alembic upgrade head` before deploy.
-        if engine.dialect.name == "sqlite":
-            await conn.run_sync(Base.metadata.create_all)
+        # Create missing tables on first boot; schema patches below keep older DBs compatible.
+        await conn.run_sync(Base.metadata.create_all)
         await ensure_user_schema_patches(conn)
     yield
 
